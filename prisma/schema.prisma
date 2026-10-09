@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "client"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+enum GameStatus {
+ WAITING
+ ACTIVE
+ PAUSED
+ FINISHED
+ CANCELLED
+}
+enum BoardMode {
+ RANDOM
+ MANUAL
+}
+enum GameType {
+ FRIEND
+ QUICK
+}
+enum GameResult {
+ WIN
+ DRAW
+ FORFEIT
+ ABANDONED
+}
+model User {
+ id String @id @default(uuid())
+ telegramId String @unique
+ username String?
+ firstName String
+ lastName String?
+ photoUrl String?
+ languageCode String @default("uz")
+ rating Int @default(1000)
+ xp Int @default(0)
+ level Int @default(1)
+ wins Int @default(0)
+ losses Int @default(0)
+ draws Int @default(0)
+ gamesPlayed Int @default(0)
+ currentWinStreak Int @default(0)
+ bestWinStreak Int @default(0)
+ totalLines Int @default(0)
+ totalTurns Int @default(0)
+ isBanned Boolean @default(false)
+ banReason String?
+ bannedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ lastSeenAt DateTime @default(now())
+ players GamePlayer[]
+ turns Turn[]
+ queue MatchmakingEntry?
+ achievements UserAchievement[]
+ dailyActivity DailyActivity[]
+ @@index([rating(sort: Desc), id])
+ @@index([wins(sort: Desc), id])
+ @@index([bestWinStreak(sort: Desc), id])
+ @@index([gamesPlayed(sort: Desc), id])
+}
+model Game {
+ id String @id @default(uuid())
+ publicCode String @unique
+ type GameType
+ boardMode BoardMode @default(RANDOM)
+ status GameStatus @default(WAITING)
+ numberMin Int @default(1)
+ numberMax Int @default(40)
+ boardSize Int @default(5)
+ winLines Int @default(5)
+ diagonalEnabled Boolean @default(false)
+ rulesVersion String @default("1.0")
+ currentPlayerId String?
+ firstPlayerId String?
+ winnerId String?
+ result GameResult?
+ rematchRequestedBy String?
+ rematchGameId String? @unique
+ pausedAt DateTime?
+ turnDeadline DateTime?
+ createdAt DateTime @default(now())
+ startedAt DateTime?
+ finishedAt DateTime?
+ updatedAt DateTime @updatedAt
+ players GamePlayer[]
+ turns Turn[]
+ @@index([status, updatedAt])
+ @@index([createdAt, type])
+}
+model GamePlayer {
+ id String @id @default(uuid())
+ gameId String
+ game Game @relation(fields:[gameId],references:[id],onDelete:Cascade)
+ userId String
+ user User @relation(fields:[userId],references:[id])
+ seat Int
+ isReady Boolean @default(false)
+ lineCount Int @default(0)
+ ratingBefore Int?
+ ratingAfter Int?
+ ratingDelta Int?
+ joinedAt DateTime @default(now())
+ board Board?
+ @@unique([gameId,userId])
+ @@unique([gameId,seat])
+ @@index([userId,joinedAt(sort: Desc)])
+}
+model Board {
+ id String @id @default(uuid())
+ gamePlayerId String @unique
+ gamePlayer GamePlayer @relation(fields:[gamePlayerId],references:[id],onDelete:Cascade)
+ cells Int[]
+ lockedAt DateTime?
+}
+model Turn {
+ id String @id @default(uuid())
+ gameId String
+ game Game @relation(fields:[gameId],references:[id],onDelete:Cascade)
+ userId String
+ user User @relation(fields:[userId],references:[id])
+ number Int
+ turnIndex Int
+ createdAt DateTime @default(now())
+ @@unique([gameId,number])
+ @@unique([gameId,turnIndex])
+}
+model Achievement {
+ code String @id
+ users UserAchievement[]
+}
+model UserAchievement {
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ code String
+ achievement Achievement @relation(fields:[code],references:[code])
+ unlockedAt DateTime @default(now())
+ @@id([userId,code])
+}
+model MatchmakingEntry {
+ userId String @id
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ createdAt DateTime @default(now())
+ @@index([createdAt])
+}
+model DailyActivity {
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ day DateTime @db.Date
+ @@id([userId,day])
+ @@index([day])
+}
