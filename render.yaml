@@ -2,7 +2,7 @@ services:
   - type: web
     name: bingo-duel
     runtime: node
-    plan: starter
+    plan: free
     numInstances: 1
     buildCommand: npm ci --include=dev && npm run build
     preDeployCommand: npm run db:migrate
@@ -39,7 +39,7 @@ services:
         value: "false"
 databases:
   - name: bingo-duel-db
-    plan: basic-256mb
+    plan: free
     databaseName: bingo
     user: bingo
     postgresMajorVersion: "16"
