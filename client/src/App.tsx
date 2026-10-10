@@ -110,6 +110,39 @@ export function App() {
     void initialize();
   }, [initialize]);
   useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+    const syncViewport = () => {
+      const style = document.documentElement.style;
+      for (const [prefix, insets] of [
+        ["safe-area", tg.safeAreaInset],
+        ["content-safe-area", tg.contentSafeAreaInset],
+      ] as const) {
+        if (!insets) continue;
+        for (const side of ["top", "bottom", "left", "right"] as const) {
+          const value = insets[side];
+          if (Number.isFinite(value) && value >= 0)
+            style.setProperty(`--tg-${prefix}-inset-${side}`, `${value}px`);
+        }
+      }
+      if (tg.viewportStableHeight && Number.isFinite(tg.viewportStableHeight))
+        style.setProperty(
+          "--tg-viewport-stable-height",
+          `${tg.viewportStableHeight}px`,
+        );
+    };
+    const events = [
+      "safeAreaChanged",
+      "contentSafeAreaChanged",
+      "viewportChanged",
+    ];
+    syncViewport();
+    for (const event of events) tg.onEvent(event, syncViewport);
+    return () => {
+      for (const event of events) tg.offEvent(event, syncViewport);
+    };
+  }, []);
+  useEffect(() => {
     const theme = () => {
       document.documentElement.dataset.theme =
         settings.theme === "auto"
@@ -200,60 +233,62 @@ export function App() {
     );
   if (!user)
     return (
-      <main className="app auth">
-        <Brand />
-        <h1>{t.localTitle}</h1>
-        <ErrorNotice code={bootError ?? action.error} />
-        {dev ? (
-          <>
-            <p className="muted">{t.localHelp}</p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void action.run(async () => {
-                  const r = await post<{ token: string; user: PublicUser }>(
-                    "/auth",
-                    { devId: Number(player), devKey: key },
-                  );
-                  sessionStorage.setItem("bingo-token", r.token);
-                  useSession.getState().set(r);
-                  setKey("");
-                  await initialize();
-                });
-              }}
-            >
-              <label>
-                {t.playerId}
-                <input
-                  type="number"
-                  min="1"
-                  max="1000000"
-                  value={player}
-                  onChange={(e) => setPlayer(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                {t.localKey}
-                <input
-                  type="password"
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                  required
-                  autoComplete="off"
-                />
-              </label>
-              <button className="primary" disabled={action.busy}>
-                {action.busy ? t.loading : t.login}
-              </button>
-            </form>
-          </>
-        ) : (
-          <>
-            <p>{t.telegramOnly}</p>
-            <button onClick={() => void initialize()}>{t.retry}</button>
-          </>
-        )}
+      <main className="app">
+        <div className="auth">
+          <Brand />
+          <h1>{t.localTitle}</h1>
+          <ErrorNotice code={bootError ?? action.error} />
+          {dev ? (
+            <>
+              <p className="muted">{t.localHelp}</p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void action.run(async () => {
+                    const r = await post<{ token: string; user: PublicUser }>(
+                      "/auth",
+                      { devId: Number(player), devKey: key },
+                    );
+                    sessionStorage.setItem("bingo-token", r.token);
+                    useSession.getState().set(r);
+                    setKey("");
+                    await initialize();
+                  });
+                }}
+              >
+                <label>
+                  {t.playerId}
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000000"
+                    value={player}
+                    onChange={(e) => setPlayer(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  {t.localKey}
+                  <input
+                    type="password"
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                    required
+                    autoComplete="off"
+                  />
+                </label>
+                <button className="primary" disabled={action.busy}>
+                  {action.busy ? t.loading : t.login}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <p>{t.telegramOnly}</p>
+              <button onClick={() => void initialize()}>{t.retry}</button>
+            </>
+          )}
+        </div>
       </main>
     );
   const gameRoute = location.pathname.startsWith("/game/");
@@ -308,34 +343,36 @@ export function App() {
       </Routes>
       {!gameRoute && (
         <nav className="bottom-nav">
-          <button
-            className={location.pathname === "/" ? "selected" : ""}
-            onClick={() => navigate("/")}
-          >
-            <span>⌂</span>
-            {t.home}
-          </button>
-          <button
-            className={location.pathname === "/leaderboard" ? "selected" : ""}
-            onClick={() => navigate("/leaderboard")}
-          >
-            <span>♜</span>
-            {t.leaderboard}
-          </button>
-          <button
-            className={location.pathname === "/history" ? "selected" : ""}
-            onClick={() => navigate("/history")}
-          >
-            <span>◷</span>
-            {t.history}
-          </button>
-          <button
-            className={location.pathname === "/settings" ? "selected" : ""}
-            onClick={() => navigate("/settings")}
-          >
-            <span>⚙</span>
-            {t.settings}
-          </button>
+          <div className="bottom-nav-content">
+            <button
+              className={location.pathname === "/" ? "selected" : ""}
+              onClick={() => navigate("/")}
+            >
+              <span>⌂</span>
+              {t.home}
+            </button>
+            <button
+              className={location.pathname === "/leaderboard" ? "selected" : ""}
+              onClick={() => navigate("/leaderboard")}
+            >
+              <span>♜</span>
+              {t.leaderboard}
+            </button>
+            <button
+              className={location.pathname === "/history" ? "selected" : ""}
+              onClick={() => navigate("/history")}
+            >
+              <span>◷</span>
+              {t.history}
+            </button>
+            <button
+              className={location.pathname === "/settings" ? "selected" : ""}
+              onClick={() => navigate("/settings")}
+            >
+              <span>⚙</span>
+              {t.settings}
+            </button>
+          </div>
         </nav>
       )}
     </main>

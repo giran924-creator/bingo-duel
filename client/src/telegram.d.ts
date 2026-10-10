@@ -1,5 +1,11 @@
 export {};
 declare global {
+  interface TelegramSafeAreaInset {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  }
   interface Window {
     Telegram?: {
       WebApp: {
@@ -7,6 +13,9 @@ declare global {
         initDataUnsafe?: { start_param?: string };
         colorScheme: "light" | "dark";
         themeParams: Record<string, string>;
+        safeAreaInset?: TelegramSafeAreaInset;
+        contentSafeAreaInset?: TelegramSafeAreaInset;
+        viewportStableHeight?: number;
         ready: () => void;
         expand: () => void;
         openTelegramLink: (url: string) => void;

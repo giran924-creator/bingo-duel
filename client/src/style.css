@@ -125,14 +125,47 @@ strong {
 a {
   color: var(--accent);
 }
+/* Device/OS insets may be reported by both CSS env() and Telegram.
+   Telegram content insets add the space occupied by its own UI controls. */
+:root {
+  --app-content-width: 760px;
+  --app-safe-top: calc(
+    max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px)) +
+      var(--tg-content-safe-area-inset-top, 0px)
+  );
+  --app-safe-bottom: calc(
+    max(
+        env(safe-area-inset-bottom, 0px),
+        var(--tg-safe-area-inset-bottom, 0px)
+      ) +
+      var(--tg-content-safe-area-inset-bottom, 0px)
+  );
+  --app-safe-left: calc(
+    max(env(safe-area-inset-left, 0px), var(--tg-safe-area-inset-left, 0px)) +
+      var(--tg-content-safe-area-inset-left, 0px)
+  );
+  --app-safe-right: calc(
+    max(env(safe-area-inset-right, 0px), var(--tg-safe-area-inset-right, 0px)) +
+      var(--tg-content-safe-area-inset-right, 0px)
+  );
+}
 .app {
-  max-width: 480px;
-  min-height: 100dvh;
-  margin: auto;
+  width: 100%;
+  min-height: var(--tg-viewport-stable-height, 100dvh);
   background: var(--bg);
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: calc(90px + env(safe-area-inset-bottom));
-  overflow-x: clip;
+  padding: calc(var(--app-safe-top) + 8px) var(--app-safe-right)
+    calc(90px + var(--app-safe-bottom)) var(--app-safe-left);
+}
+.screen,
+.topbar,
+.auth,
+.connection-bar,
+.app > .brand,
+.app > .empty,
+.app > .notice {
+  width: 100%;
+  max-width: var(--app-content-width);
+  margin-inline: auto;
 }
 .screen {
   padding: 0 20px 24px;
@@ -410,15 +443,20 @@ a {
 .bottom-nav {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(480px, 100%);
-  display: flex;
-  justify-content: space-around;
-  padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  padding: 10px calc(var(--app-safe-right) + 8px)
+    calc(10px + var(--app-safe-bottom)) calc(var(--app-safe-left) + 8px);
   background: var(--bg);
   border-top: 1px solid var(--border);
   z-index: 10;
+}
+.bottom-nav-content {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  max-width: var(--app-content-width);
+  margin-inline: auto;
 }
 .bottom-nav button {
   background: transparent;
@@ -660,7 +698,7 @@ a {
 .score-row > span {
   font-size: 11px;
   color: var(--muted);
-  min-width: 68px;
+  min-width: 0;
   max-width: 110px;
   flex: 1;
   overflow: hidden;
@@ -816,7 +854,8 @@ a {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 20px 12px calc(20px + env(safe-area-inset-bottom));
+  padding: calc(var(--app-safe-top) + 8px) calc(var(--app-safe-right) + 12px)
+    calc(var(--app-safe-bottom) + 20px) calc(var(--app-safe-left) + 12px);
 }
 .modal {
   background: var(--bg);
@@ -825,7 +864,7 @@ a {
   padding: 20px;
   width: 100%;
   max-width: 440px;
-  max-height: 85dvh;
+  max-height: min(85dvh, 100%);
   overflow: auto;
   box-shadow: 0 24px 90px #0005;
   animation: screen-in 0.2s;
@@ -861,6 +900,8 @@ a {
 .countdown {
   position: fixed;
   inset: 0;
+  padding: calc(var(--app-safe-top) + 8px) var(--app-safe-right)
+    var(--app-safe-bottom) var(--app-safe-left);
   background: #0b1017ed;
   display: flex;
   flex-direction: column;

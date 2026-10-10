@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { useText } from "./i18n";
 import type { PublicUser } from "../../shared/types";
@@ -44,7 +45,7 @@ export function Modal({
   onClose: () => void;
 }) {
   const t = useText();
-  return (
+  return createPortal(
     <div className="overlay" onClick={onClose}>
       <section
         className="modal"
@@ -65,7 +66,8 @@ export function Modal({
         </div>
         {children}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 export function Bingo({ count, target }: { count: number; target: number }) {
